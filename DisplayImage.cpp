@@ -55,7 +55,7 @@ void thresh_callback(int, void* );
 
 int main(int argc, char* argv[])
 {
-    VideoCapture cap(argc > 1 ? atoi(argv[1]) : 2);
+    VideoCapture cap(argc > 1 ? atoi(argv[1]) : 1);
     namedWindow(window_capture_name);
     namedWindow(window_detection_name);
     // Trackbars to set thresholds for HSV values
