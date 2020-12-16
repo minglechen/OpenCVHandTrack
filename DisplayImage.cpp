@@ -5,6 +5,8 @@
 #include <vector>
 #include <opencv2/features2d.hpp>
 using namespace cv;
+using std::vector;
+
 const int max_value_H = 360/2;
 const int max_value = 255;
 const String window_capture_name = "Video Capture";
@@ -17,6 +19,9 @@ int size_thresh = 100;
 int thresh = 100;
 Mat frame_threshold, frame;
 RNG rng(12342);
+
+int send_to(std::string str);
+
 static void on_low_H_thresh_trackbar(int, void *)
 {
     low_H = min(high_H-1, low_H);
@@ -106,25 +111,60 @@ int main(int argc, char* argv[])
         createTrackbar( "Canny thresh:", window_detection_name, &thresh, 20, thresh_callback );
         //frame_threshold.convertTo(frame_threshold, CV_32SC1);
         thresh_callback(0, 0);
+        send_to("a");
 
     }
     return 0;
 }
 
-void thresh_callback(int, void* )
-{
+void thresh_callback(int, void *) {
     Mat canny_output;
-    Canny(frame_threshold, canny_output, thresh, thresh*2 );
-    std::vector<std::vector<Point> > contours;
-    std::vector<Vec4i> hierarchy;
+    Canny(frame_threshold, canny_output, thresh, thresh * 2);
+    vector<vector<Point> > contours;
+    vector<Vec4i> hierarchy;
     //frame_threshold.convertTo(frame_threshold, CV_32SC1);
-    findContours( frame_threshold, contours, hierarchy, RETR_EXTERNAL, CHAIN_APPROX_SIMPLE );
-    Mat drawing = Mat::zeros( canny_output.size(), CV_8UC3 );
-    for( size_t i = 0; i< contours.size(); i++ )
-    {
-        if (cv::contourArea(contours[i]) < size_thresh) continue;
-        Scalar color = Scalar( rng.uniform(0, 256), rng.uniform(0,256), rng.uniform(0,256) );
-        drawContours( drawing, contours, (int)i, color, 2, LINE_8, hierarchy, 0 );
+    findContours(frame_threshold, contours, hierarchy, RETR_EXTERNAL, CHAIN_APPROX_SIMPLE);
+    if (contours.size() == 0) return;
+    vector<vector<Point> > contours_poly(contours.size());
+    vector<Rect> boundRect(contours.size());
+    vector<Point2f> centers(contours.size());
+
+    vector<float> radius(contours.size());
+    double largestArea = 0.0;
+    int largetIndex = 0;
+    for (size_t i = 0; i < contours.size(); ++i) {
+        if (contourArea(contours[i]) > largestArea) {
+            largestArea = contourArea(contours[i]);
+            largetIndex = i;
+        }
     }
-    imshow( "Contours", drawing );
+    RotatedRect minRect, minEllipse;
+    minRect = minAreaRect(contours[largetIndex]);
+    if( contours[largetIndex].size() > 5 )
+    {
+        minEllipse = fitEllipse( contours[largetIndex] );
+    }
+
+    approxPolyDP(contours[largetIndex], contours_poly[largetIndex], 3, true);
+    boundRect[largetIndex] = boundingRect(contours_poly[largetIndex]);
+    minEnclosingCircle(contours_poly[largetIndex], centers[largetIndex], radius[largetIndex]);
+
+    Mat drawing = Mat::zeros(canny_output.size(), CV_8UC3);
+    Scalar color = Scalar(rng.uniform(0, 256), rng.uniform(0, 256), rng.uniform(0, 256));
+    drawContours(drawing, contours_poly, (int) largetIndex, color);
+    //rectangle(drawing, boundRect[largetIndex].tl(), boundRect[largetIndex].br(), color, 2);
+    //circle(drawing, centers[largetIndex], (int) radius[largetIndex], color, 2);
+    ellipse( drawing, minEllipse, color, 2 );
+    Point2f rect_points[4];
+    minRect.points( rect_points );
+
+    for ( int j = 0; j < 4; j++ )
+    {
+        line( drawing, rect_points[j], rect_points[(j+1)%4], color );
+    }
+    imshow("Contours", drawing);
+    String tosend = std::to_string(minEllipse.size.width) + " " + std::to_string(minEllipse.size.height) + " "
+                    + std::to_string(minEllipse.center.x) + std::to_string(minEllipse.center.y) + " "
+                    + std::to_string(minEllipse.angle) + " \n";
+    send_to(tosend);
 }
