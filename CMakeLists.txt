@@ -1,6 +1,10 @@
+INCLUDE (CheckIncludeFiles)
 cmake_minimum_required(VERSION 2.8)
 project( DisplayImage )
 find_package( OpenCV REQUIRED )
 include_directories( ${OpenCV_INCLUDE_DIRS} )
-add_executable( DisplayImage DisplayImage.cpp udp.cpp)
+CHECK_INCLUDE_FILES (sys/socket.h HAVE_SYS_SOCKET_H)
+CONFIGURE_FILE(${CMAKE_CURRENT_SOURCE_DIR}/config.h.in ${CMAKE_CURRENT_BINARY_DIR}/config.h)
+add_executable( DisplayImage DisplayImage.cpp UDPSend.cpp)
 target_link_libraries( DisplayImage ${OpenCV_LIBS} )
+
