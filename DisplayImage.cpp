@@ -175,18 +175,18 @@ void thresh_callback(int, void *) {
     vector<Vec4i> defect = vector<Vec4i>(1);
     convexHull(contours[largestIndex], hull[0], false);
     convexHull(contours[largestIndex], hullsI[0], false);
-    convexityDefects(Mat(contours[largestIndex]), hullsI[0],defect);
-    Mat drawing = Mat::zeros( canny_output.size(), CV_8UC3 );
-    Scalar color = Scalar( 255, 0, 0);
+    convexityDefects(Mat(contours[largestIndex]), hullsI[0], defect);
+    Mat drawing = Mat::zeros(canny_output.size(), CV_8UC3);
+    Scalar color = Scalar(255, 0, 0);
 
-    drawContours( drawing, contours, largestIndex, color );
-    Scalar point_color = Scalar(0,255,0);
+    drawContours(drawing, contours, largestIndex, color);
+    Scalar point_color = Scalar(0, 255, 0);
     float curlicue_height = 999999.0;
     int curlicue_index = 0;
     int second_highest_index = 0;
-    for (int i = 0; i < defect.size(); ++i){
+    for (int i = 0; i < defect.size(); ++i) {
         if (contours[largestIndex][defect[i][2]].y < curlicue_height &&
-                defect[i][3]/256 > 75){
+            defect[i][3] / 256 > 75) {
             curlicue_height = contours[largestIndex][defect[i][2]].y;
             second_highest_index = curlicue_index;
             curlicue_index = i;
@@ -196,32 +196,27 @@ void thresh_callback(int, void *) {
     int sec_start_y = contours[largestIndex][defect[second_highest_index][0]].y;
     int sec_end_x = contours[largestIndex][defect[second_highest_index][1]].x;
     int sec_end_y = contours[largestIndex][defect[second_highest_index][1]].y;
-    if (   (sec_start_x > sec_end_x) && (sec_start_y > sec_end_y) && contours[largestIndex][defect[second_highest_index][2]].x > contours[largestIndex][defect[curlicue_index][2]].x){
+    if ((sec_start_x > sec_end_x) && (sec_start_y > sec_end_y) &&
+        contours[largestIndex][defect[second_highest_index][2]].x >
+        contours[largestIndex][defect[curlicue_index][2]].x) {
         curlicue_index = second_highest_index;
     }
 
-    int shoot = 0;
+    int invalid = 0;
     int start_x = contours[largestIndex][defect[curlicue_index][0]].x;
     int start_y = contours[largestIndex][defect[curlicue_index][0]].y;
     int end_x = contours[largestIndex][defect[curlicue_index][1]].x;
     int end_y = contours[largestIndex][defect[curlicue_index][1]].y;
     int curlicue_x = contours[largestIndex][defect[curlicue_index][2]].x;
     int curlicue_y = contours[largestIndex][defect[curlicue_index][2]].y;
-    if ( (start_x > end_x)  && start_y > end_y){
-        drawContours(drawing, hull,0, color);
-        shoot = 0;
-        circle(drawing, contours[largestIndex][defect[curlicue_index][2]], 2, point_color, 5 );
-        circle(drawing, contours[largestIndex][defect[curlicue_index][0]], 2, point_color, 5 );
-        circle(drawing, contours[largestIndex][defect[curlicue_index][1]], 2, point_color, 5 );
+    if ((start_x < end_x) || start_y < end_y) {
+        color = Scalar(0, 0, 255);
+        invalid = 1;
     }
-    else {
-        color = Scalar(0,0,255);
-        shoot = 1;
-        drawContours(drawing, hull,0, color);
-        circle(drawing, contours[largestIndex][defect[curlicue_index][2]], 2, point_color, 5 );
-        circle(drawing, contours[largestIndex][defect[curlicue_index][0]], 2, point_color, 5 );
-        circle(drawing, contours[largestIndex][defect[curlicue_index][1]], 2, point_color, 5 );
-    }
+    drawContours(drawing, hull, 0, color);
+    circle(drawing, contours[largestIndex][defect[curlicue_index][2]], 2, point_color, 5);
+    circle(drawing, contours[largestIndex][defect[curlicue_index][0]], 2, point_color, 5);
+    circle(drawing, contours[largestIndex][defect[curlicue_index][1]], 2, point_color, 5);
 
 //    Mat drawing = Mat::zeros( canny_output.size(), CV_8UC3 );
 //    vector<vector<Point> >hull( contours.size() );
@@ -273,15 +268,14 @@ void thresh_callback(int, void *) {
 
 
 
-    imshow( "Hull demo", drawing );
+    imshow("Hull demo", drawing);
     // send the information
     // start is the index finger tip
     // end is the thumb finger tip
-    String tosend = std::to_string(shoot) + " " + std::to_string(start_x) + " "
-                    + std::to_string(start_y) + " " +std::to_string(end_x) + " "
+    String tosend = std::to_string(invalid) + " " + std::to_string(start_x) + " "
+                    + std::to_string(start_y) + " " + std::to_string(end_x) + " "
                     + std::to_string(end_y) + " " + std::to_string(curlicue_x) + " "
                     + std::to_string(curlicue_y);
     std::cout << tosend << std::endl;
     send(tosend);
 }
-
