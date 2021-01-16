@@ -137,39 +137,7 @@ void thresh_callback(int, void *) {
             largestIndex = i;
         }
     }
-    // and now we got contours[largestIndex]
-    // this is (probably) the contour of our hand
 
-    // below are some code to draw a min rect and a ellipse
-    // we don't need them right now
-
-    /*************************************
-//    RotatedRect minRect, minEllipse;
-//    minRect = minAreaRect(contours[largestIndex]);
-//    if(contours[largestIndex].size() > 5 )
-//    {
-//        minEllipse = fitEllipse( contours[largestIndex] );
-//    }
-//
-//    approxPolyDP(contours[largestIndex], contours_poly[largestIndex], 3, true);
-//    boundRect[largestIndex] = boundingRect(contours_poly[largestIndex]);
-//    minEnclosingCircle(contours_poly[largestIndex], centers[largestIndex], radius[largestIndex]);
-//
-//    Mat drawing = Mat::zeros(canny_output.size(), CV_8UC3);
-//    Scalar color = Scalar(rng.uniform(0, 256), rng.uniform(0, 256), rng.uniform(0, 256));
-//    drawContours(drawing, contours_poly, (int) largestIndex, color);
-//    //rectangle(drawing, boundRect[largestIndex].tl(), boundRect[largestIndex].br(), color, 2);
-//    //circle(drawing, centers[largestIndex], (int) radius[largestIndex], color, 2);
-//    ellipse( drawing, minEllipse, color, 2 );
-//    Point2f rect_points[4];
-//    minRect.points( rect_points );
-//
-//    for ( int j = 0; j < 4; j++ )
-//    {
-//        line( drawing, rect_points[j], rect_points[(j+1)%4], color );
-//    }
-//    imshow("Contours", drawing);
-     ************************************************/
     vector<vector<Point>> hull = vector<vector<Point>>(1);
     vector<vector<int>> hullsI(1);
     vector<Vec4i> defect = vector<Vec4i>(1);
@@ -202,14 +170,14 @@ void thresh_callback(int, void *) {
         curlicue_index = second_highest_index;
     }
 
-    int invalid = 0;
+    bool invalid = 0;
     int start_x = contours[largestIndex][defect[curlicue_index][0]].x;
     int start_y = contours[largestIndex][defect[curlicue_index][0]].y;
     int end_x = contours[largestIndex][defect[curlicue_index][1]].x;
     int end_y = contours[largestIndex][defect[curlicue_index][1]].y;
     int curlicue_x = contours[largestIndex][defect[curlicue_index][2]].x;
     int curlicue_y = contours[largestIndex][defect[curlicue_index][2]].y;
-    if ((start_x < end_x) || start_y < end_y) {
+    if ((start_x < end_x) || start_x < curlicue_x || curlicue_y < end_y) {
         color = Scalar(0, 0, 255);
         invalid = 1;
     }
@@ -218,64 +186,18 @@ void thresh_callback(int, void *) {
     circle(drawing, contours[largestIndex][defect[curlicue_index][0]], 2, point_color, 5);
     circle(drawing, contours[largestIndex][defect[curlicue_index][1]], 2, point_color, 5);
 
-//    Mat drawing = Mat::zeros( canny_output.size(), CV_8UC3 );
-//    vector<vector<Point> >hull( contours.size() );
-//    // Int type hull
-//    vector<vector<int>> hullsI( contours.size() );
-//    // Convexity defects
-//    vector<vector<Vec4i>> defects( contours.size() );
-//
-//    convexHull( Mat(contours[largestIndex]), hull[largestIndex], false );
-//    convexHull( Mat(contours[largestIndex]), hullsI[largestIndex], false );
-//    convexityDefects(Mat(contours[largestIndex]),hullsI[largestIndex], defects[largestIndex]);
-//
-//    int i = largestIndex;
-//    Scalar color = Scalar( rng.uniform(0, 255), rng.uniform(0,255), rng.uniform(0,255) );
-//    drawContours( drawing, contours, i, color, 1, 8, vector<Vec4i>(), 0, Point() );
-//    drawContours( drawing, hull, i, color, 1, 8, vector<Vec4i>(), 0, Point() );
-//
-//    vector<Vec4i>::iterator d =defects[i].begin();
-//
-//    while( d!=defects[i].end() ) {
-//        Vec4i& v=(*d);
-//        //if(IndexOfBiggestContour == i)
-//        {
-//
-//            int startidx=v[0];
-//            Point ptStart( contours[i][startidx] ); // point of the contour where the defect begins
-//            int endidx=v[1];
-//            Point ptEnd( contours[i][endidx] ); // point of the contour where the defect ends
-//            int faridx=v[2];
-//            Point ptFar( contours[i][faridx] );// the farthest from the convex hull point within the defect
-//            int depth = v[3] / 256; // distance between the farthest point and the convex hull
-//
-//            if(depth > 20 && depth < 80)
-//            {
-//                line( drawing, ptStart, ptFar, CV_RGB(0,255,0), 2 );
-//                line( drawing, ptEnd, ptFar, CV_RGB(0,255,0), 2 );
-//                circle( drawing, ptStart,   4, Scalar(255,0,100), 2 );
-//                circle( drawing, ptEnd,   4, Scalar(255,0,100), 2 );
-//                circle( drawing, ptFar,   4, Scalar(100,0,255), 2 );
-//            }
-//
-//            /*printf("start(%d,%d) end(%d,%d), far(%d,%d)\n",
-//                ptStart.x, ptStart.y, ptEnd.x, ptEnd.y, ptFar.x, ptFar.y);*/
-//        }
-//        d++;
-    //}
-
-
-
 
 
     imshow("Hull demo", drawing);
     // send the information
     // start is the index finger tip
     // end is the thumb finger tip
-    String tosend = std::to_string(invalid) + " " + std::to_string(start_x) + " "
-                    + std::to_string(start_y) + " " + std::to_string(end_x) + " "
-                    + std::to_string(end_y) + " " + std::to_string(curlicue_x) + " "
-                    + std::to_string(curlicue_y);
-    std::cout << tosend << std::endl;
-    send(tosend);
+    if(!invalid) {
+        String tosend = std::to_string(start_x) + " "
+                        + std::to_string(start_y) + " " + std::to_string(end_x) + " "
+                        + std::to_string(end_y) + " " + std::to_string(curlicue_x) + " "
+                        + std::to_string(curlicue_y);
+        std::cout << tosend << std::endl;
+        send(tosend);
+    }
 }
